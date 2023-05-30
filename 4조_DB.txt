@@ -1,0 +1,195 @@
+drop table kaja_stay_reviwe;
+drop table kaja_stay_booking;
+drop table kaja_stay_cpdt;
+drop table kaja_stay_cp;
+drop table kaja_stay_member;
+
+CREATE TABLE kaja_stay_member (--회원
+-- 입력예) id1/pw1/김회원/010-0000-0000/고객
+  id VARCHAR2(12 char) not null--아이디(fk - 업소상세, 예약, 리뷰)
+, pw VARCHAR2(12 char) not null--비밀번호
+, memname VARCHAR2(20 char) not null--회원이름
+, email VARCHAR2(60) not null--이메일
+, tel VARCHAR2(13 char) not null--전화번호
+, type VARCHAR2(2 char) not null--회원구분
+, constraint kaja_stay_member_id_pk primary key(id)--id를pk
+, constraint kaja_stay_member_id_ck check(length(id)>3)
+, constraint kaja_stay_member_type_ck check(type in('고객','사장','관리자'))--회원구분을(고객 or 사장) 둥중 하나만
+);
+
+CREATE TABLE kaja_stay_cp (--업소전체
+-- 입력예) 업소명/id/분류/주소/전화번호/특이사항+@......
+  name VARCHAR2(20 char) not null primary key--업소명 (fk - 업소상세, 예약, 리뷰)
+, id VARCHAR2(20) not null--아이디 회원테이블에서 회원구분=사장 일경우 업소를 가질수있고, 예약시 사장이름을 조회하기위헤 회원테이블과 아이디로 연결
+, cptype VARCHAR2(20) not null --분류(ex 모텔,호텔)
+, cp_address VARCHAR2(60 char) not null--주소지
+, cp_tel VARCHAR2(14 char)--업소전화번호 안심번호로 할당예정(0505-0000-0000) [업소등록시 입력x]
+, cp_detail VARCHAR2(300 char) --업소 특이사항 내부
+, cp_detail2 VARCHAR2(300 char) --업소 특이사항 외부
+, first_img VARCHAR2(100)
+, foreign key(id) references kaja_stay_member(id)--회원 테이블에서 가져다씀
+);
+
+CREATE TABLE kaja_stay_cpdt (--업소상세
+--입력예) A업소/101호/싱글룸
+  name VARCHAR2(20 char) not null--업소명 (업소전체에서 가져다씀)
+, romnum varchar2(20) not null --호실
+, rmtype VARCHAR2(20 char) not null--룸타입
+, second_img VARCHAR2(100 char)
+, rent_pr number(12) not null
+, allday_pr number(12) not null
+, CONSTRAINT kaja_stay_pk primary key(name, romnum)
+, foreign key(name) references kaja_stay_cp(name)--업소전체 테이블에서 가져다씀
+);
+
+create table kaja_stay_booking (--예약
+--입력예) A업소/김이름/호실/입실날짜/퇴실날짜
+  bkcode number not null primary key
+, name VARCHAR2(20 char) not null--업소명 이하 참조
+, id VARCHAR2(20 char) not null--예약자 이름 조회를 위함
+, romnum varchar2(20) not null--호실
+, in_date date not null--입실날짜
+, out_date date not null--퇴실날짜
+, price number not null
+, flag VARCHAR2(12 char) not null
+, foreign key(name, romnum) references kaja_stay_cpdt(name, romnum)--업소전체 테이블에서 가져다씀
+, foreign key(id) references kaja_stay_member(id)--회원 테이블에서 가져다씀
+, constraint kaja_stay_booking_flag_ck check(flag in('OK','NO'))
+);
+
+create table kaja_stay_reviwe (--리뷰
+bkcode number not null
+, name VARCHAR2(20 char) not null--이하참조
+, id VARCHAR2(12 char) not null--이하참조
+, rmtype VARCHAR2(20 char) not null--이하참조
+, grade number constraint kaja_stay_reviwe_ck check(grade BETWEEN 0 AND 5)--평점을0점부터5점까지만 입력가능하게
+, revuwe_str VARCHAR2(300 char)--리뷰내용
+, foreign key(bkcode) references kaja_stay_booking(bkcode)
+, foreign key(name) references kaja_stay_cp(name)--업소전체 테이블에서 가져다씀
+, foreign key(id) references kaja_stay_member(id)--회원 테이블에서 가져다씀
+);
+
+INSERT INTO kaja_stay_member VALUES ('testid1','testpw1','테스트1','test@test.com','010-1212-3232','고객');
+INSERT INTO kaja_stay_member VALUES ('testid2','testpw2','테스트2','test2@test.com','010-1212-3233','사장');
+INSERT INTO kaja_stay_member VALUES ('testid3','testpw3','테스트3','test2@test.com','010-1212-3233','사장');
+
+insert into kaja_stay_cp values ('와라게스트','testid2','게스트하우스','서울특별시 종로구 종로3가','0505-8284-6251','침대푹신','주변 들과산','guest1.jpg');
+insert into kaja_stay_cpdt values ('와라게스트','101호','싱글룸','guest1.jpg', 8000, 20000);
+insert into kaja_stay_cpdt values ('와라게스트','102호','싱글룸','guest1.jpg', 8000, 20000);
+insert into kaja_stay_cpdt values ('와라게스트','103호','싱글룸','guest1.jpg', 8000, 20000);
+insert into kaja_stay_cpdt values ('와라게스트','201호','싱글룸','guest1.jpg', 8000, 20000);
+insert into kaja_stay_cpdt values ('와라게스트','202호','더블룸','guest1.jpg', 10000, 30000);
+insert into kaja_stay_cpdt values ('와라게스트','203호','더블룸','guest1.jpg', 10000, 30000);
+insert into kaja_stay_cp values ('어둑게스트','testid3','게스트하우스','서울특별시 종로구 종로3가','0505-8153-4112','생각보다안은아늑','갬성게스트','guest2.jpg');
+insert into kaja_stay_cpdt values ('어둑게스트','101호','싱글룸','guest2.jpg', 7000, 15000);
+insert into kaja_stay_cpdt values ('어둑게스트','102호','싱글룸','guest2.jpg', 7000, 15000);
+insert into kaja_stay_cpdt values ('어둑게스트','103호','싱글룸','guest2.jpg', 8000, 17000);
+insert into kaja_stay_cpdt values ('어둑게스트','201호','더블룸','guest2.jpg', 10000, 23000);
+insert into kaja_stay_cpdt values ('어둑게스트','202호','디럭스룸','guest2.jpg', 20000, 40000);
+insert into kaja_stay_cp values ('드럼게스트','testid3','게스트하우스','서울특별시 종로구 종로3가','0505-8177-4112','드럼있음','주변인디촌','guest3.jpg');
+insert into kaja_stay_cpdt values ('드럼게스트','101호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','102호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','103호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','104호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','105호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','106호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','107호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cpdt values ('드럼게스트','108호','싱글룸','guest3.jpg', 5000, 10000);
+insert into kaja_stay_cp values ('마시고죽는다','testid3','게스트하우스','서울특별시 종로구 종로3가','0505-7153-4112','먹고죽자','파티게스트','guest4.jpg');
+insert into kaja_stay_cpdt values ('마시고죽는다','101호','싱글룸','guest4.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('마시고죽는다','102호','싱글룸','guest4.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('마시고죽는다','103호','싱글룸','guest4.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('마시고죽는다','104호','싱글룸','guest4.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('마시고죽는다','201호','더블룸','guest4.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('마시고죽는다','202호','더블룸','guest4.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('마시고죽는다','203호','더블룸','guest4.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('마시고죽는다','204호','슈퍼룸','guest4.jpg', 30000, 50000);
+insert into kaja_stay_cp values ('고성게스트','testid3','게스트하우스','서울특별시 종로구 종로3가','0505-8173-4112','일단와봐','갬성게스트','guest5.jpg');
+insert into kaja_stay_cpdt values ('고성게스트','101호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','102호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','103호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','104호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','105호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','201호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','202호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cpdt values ('고성게스트','203호','싱글룸','guest5.jpg', 8000, 13000);
+insert into kaja_stay_cp values ('한적게스트','testid2','게스트하우스','서울특별시 종로구 종로3가','0505-7153-9112','고요하다','아늑게스트','guest6.jpg');
+insert into kaja_stay_cpdt values ('한적게스트','101호','싱글룸','guest6.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('한적게스트','102호','싱글룸','guest6.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('한적게스트','103호','싱글룸','guest6.jpg', 10000, 20000);
+insert into kaja_stay_cpdt values ('한적게스트','104호','싱글룸','guest6.jpg', 10000, 20000);
+insert into kaja_stay_cp values ('A호텔','testid2','호텔','서울특별시 종로구 종로3가','0505-7153-8812','고요하다','아늑게스트','hotel1.jpg');
+insert into kaja_stay_cpdt values ('A호텔','101호','싱글룸','hotel1.jpg', 20000, 50000);
+insert into kaja_stay_cpdt values ('A호텔','102호','싱글룸','hotel1.jpg', 20000, 50000);
+insert into kaja_stay_cpdt values ('A호텔','103호','더블룸','hotel1.jpg', 30000, 60000);
+insert into kaja_stay_cpdt values ('A호텔','104호','디럭스룸','hotel1.jpg', 35000, 70000);
+insert into kaja_stay_cp values ('B호텔','testid2','호텔','서울특별시 종로구 종로3가','0505-7153-8800','고요하다','아늑게스트','hotel2.jpg');
+insert into kaja_stay_cpdt values ('B호텔','101호','싱글룸','hotel2.jpg', 40000, 80000);
+insert into kaja_stay_cpdt values ('B호텔','102호','싱글룸','hotel2.jpg', 40000, 80000);
+insert into kaja_stay_cpdt values ('B호텔','103호','더블룸','hotel2.jpg', 50000, 100000);
+insert into kaja_stay_cpdt values ('B호텔','104호','파티룸','hotel2.jpg', 80000, 160000);
+insert into kaja_stay_cp values ('C호텔','testid2','호텔','서울특별시 종로구 종로3가','0505-7153-8899','고요하다','아늑게스트','hotel3.jpg');
+insert into kaja_stay_cpdt values ('C호텔','101호','싱글룸','hotel3.jpg', 30000, 60000);
+insert into kaja_stay_cpdt values ('C호텔','102호','싱글룸','hotel3.jpg', 30000, 60000);
+insert into kaja_stay_cpdt values ('C호텔','103호','더블룸','hotel3.jpg', 35000, 80000);
+insert into kaja_stay_cpdt values ('C호텔','104호','파티룸','hotel3.jpg', 60000, 120000);
+insert into kaja_stay_cp values ('A모텔','testid2','모텔','서울특별시 종로구 종로3가','0505-3353-8899','고요하다','아늑게스트','motel1.jpg');
+insert into kaja_stay_cpdt values ('A모텔','101호','싱글룸','motel1.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('A모텔','102호','싱글룸','motel1.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('A모텔','103호','더블룸','motel1.jpg', 30000, 60000);
+insert into kaja_stay_cpdt values ('A모텔','104호','파티룸','motel1.jpg', 40000, 80000);
+insert into kaja_stay_cp values ('B모텔','testid2','모텔','서울특별시 종로구 종로3가','0505-9993-8899','고요하다','아늑게스트','motel2.jpg');
+insert into kaja_stay_cpdt values ('B모텔','101호','싱글룸','motel2.jpg', 30000, 50000);
+insert into kaja_stay_cpdt values ('B모텔','102호','싱글룸','motel2.jpg', 30000, 50000);
+insert into kaja_stay_cpdt values ('B모텔','103호','더블룸','motel2.jpg', 50000, 80000);
+insert into kaja_stay_cpdt values ('B모텔','104호','파티룸','motel2.jpg', 50000, 100000);
+insert into kaja_stay_cp values ('C모텔','testid2','모텔','서울특별시 종로구 종로3가','0505-7777-8899','고요하다','아늑게스트','motel3.jpg');
+insert into kaja_stay_cpdt values ('C모텔','101호','싱글룸','motel3.jpg', 18000, 30000);
+insert into kaja_stay_cpdt values ('C모텔','102호','싱글룸','motel3.jpg', 18000, 30000);
+insert into kaja_stay_cpdt values ('C모텔','103호','더블룸','motel3.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('C모텔','104호','파티룸','motel3.jpg', 30000, 50000);
+insert into kaja_stay_cp values ('D모텔','testid2','모텔','서울특별시 종로구 종로3가','0505-7757-8899','고요하다','아늑게스트','motel4.jpg');
+insert into kaja_stay_cpdt values ('D모텔','101호','싱글룸','motel4.jpg', 35000, 70000);
+insert into kaja_stay_cpdt values ('D모텔','102호','싱글룸','motel4.jpg', 35000, 70000);
+insert into kaja_stay_cpdt values ('D모텔','103호','더블룸','motel4.jpg', 40000, 90000);
+insert into kaja_stay_cpdt values ('D모텔','104호','파티룸','motel4.jpg', 60000, 120000);
+insert into kaja_stay_cp values ('E모텔','testid2','모텔','서울특별시 종로구 종로3가','0505-8777-8899','고요하다','아늑게스트','motel5.jpg');
+insert into kaja_stay_cpdt values ('E모텔','101호','싱글룸','motel5.jpg', 18000, 30000);
+insert into kaja_stay_cpdt values ('E모텔','102호','싱글룸','motel5.jpg', 18000, 30000);
+insert into kaja_stay_cpdt values ('E모텔','103호','더블룸','motel5.jpg', 20000, 40000);
+insert into kaja_stay_cpdt values ('E모텔','104호','파티룸','motel5.jpg', 30000, 50000);
+insert into kaja_stay_cp values ('A펜션','testid2','펜션','서울특별시 종로구 종로3가','0505-7766-3389','고요하다','아늑게스트','pension1.jpg');
+insert into kaja_stay_cpdt values ('A펜션','101호','싱글룸','pension1.jpg', 40000, 100000);
+insert into kaja_stay_cpdt values ('A펜션','102호','싱글룸','pension1.jpg', 40000, 100000);
+insert into kaja_stay_cpdt values ('A펜션','103호','더블룸','pension1.jpg', 60000, 150000);
+insert into kaja_stay_cpdt values ('A펜션','104호','파티룸','pension1.jpg', 100000, 300000);
+insert into kaja_stay_cp values ('B펜션','testid2','펜션','서울특별시 종로구 종로3가','0505-7766-3239','고요하다','아늑게스트','pension2.jpg');
+insert into kaja_stay_cpdt values ('B펜션','101호','싱글룸','pension2.jpg', 80000, 150000);
+insert into kaja_stay_cpdt values ('B펜션','102호','싱글룸','pension2.jpg', 80000, 150000);
+insert into kaja_stay_cpdt values ('B펜션','103호','더블룸','pension2.jpg', 120000, 300000);
+insert into kaja_stay_cpdt values ('B펜션','104호','파티룸','pension2.jpg', 150000, 500000);
+insert into kaja_stay_cp values ('C펜션','testid2','펜션','서울특별시 종로구 종로3가','0505-9976-4389','고요하다','아늑게스트','pension3.jpg');
+insert into kaja_stay_cpdt values ('C펜션','101호','싱글룸','pension3.jpg', 100000, 200000);
+insert into kaja_stay_cpdt values ('C펜션','102호','싱글룸','pension3.jpg', 100000, 200000);
+insert into kaja_stay_cpdt values ('C펜션','103호','더블룸','pension3.jpg', 150000, 400000);
+insert into kaja_stay_cpdt values ('C펜션','104호','파티룸','pension3.jpg', 200000, 800000);
+insert into kaja_stay_cp values ('A리조트','testid2','리조트','서울특별시 종로구 종로3가','0505-9976-4389','고요하다','아늑게스트','resort1.jpg');
+insert into kaja_stay_cpdt values ('A리조트','101호','싱글룸','resort1.jpg', 50000, 100000);
+insert into kaja_stay_cpdt values ('A리조트','102호','싱글룸','resort1.jpg', 50000, 100000);
+insert into kaja_stay_cpdt values ('A리조트','103호','더블룸','resort1.jpg', 70000, 150000);
+insert into kaja_stay_cpdt values ('A리조트','104호','파티룸','resort1.jpg', 100000, 200000);
+insert into kaja_stay_cp values ('B리조트','testid2','리조트','서울특별시 종로구 종로3가','0505-9976-0989','고요하다','아늑게스트','resort1.jpg');
+insert into kaja_stay_cpdt values ('B리조트','101호','싱글룸','resort1.jpg', 70000, 130000);
+insert into kaja_stay_cpdt values ('B리조트','102호','싱글룸','resort1.jpg', 70000, 130000);
+insert into kaja_stay_cpdt values ('B리조트','103호','더블룸','resort1.jpg', 80000, 150000);
+insert into kaja_stay_cpdt values ('B리조트','104호','파티룸','resort1.jpg', 100000, 200000);
+insert into kaja_stay_cp values ('C리조트','testid2','리조트','서울특별시 종로구 종로3가','0505-9976-4099','고요하다','아늑게스트','resort1.jpg');
+insert into kaja_stay_cpdt values ('C리조트','101호','싱글룸','resort3.jpg', 100000, 200000);
+insert into kaja_stay_cpdt values ('C리조트','102호','싱글룸','resort3.jpg', 100000, 200000);
+insert into kaja_stay_cpdt values ('C리조트','103호','더블룸','resort3.jpg', 170000, 300000);
+insert into kaja_stay_cpdt values ('C리조트','104호','파티룸','resort3.jpg', 200000, 600000);
+
+insert into kaja_stay_booking values ((select nvl(MAX(bkcode)+1,100000) from kaja_stay_booking), '와라게스트','testid1','103호','2020-11-29','2020-11-30', 20000 , 'NO');
+insert into kaja_stay_booking values ((select nvl(MAX(bkcode)+1,100000) from kaja_stay_booking), '마시고죽는다','testid1','201호','2020-12-11','2020-12-11', 20000 , 'NO');
+
+commit;
